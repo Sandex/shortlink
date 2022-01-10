@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"github.com/go-chi/chi/v5"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -82,7 +81,7 @@ func TestFetchUrlHandler(t *testing.T) {
 			name: "negative test #4",
 			url:  "http://localhost:8080/",
 			want: want{
-				code:     400,
+				code:     404,
 				location: "",
 			},
 		},
@@ -90,20 +89,19 @@ func TestFetchUrlHandler(t *testing.T) {
 	for _, tt := range tests {
 		// запускаем каждый тест
 		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, tt.url, nil)
+
+			// создаём новый Recorder
+			w := httptest.NewRecorder()
 
 			r := chi.NewRouter()
 			r.Get("/{hash}", func(res http.ResponseWriter, req *http.Request) {
 				FetchUrlHandler(res, req, storageMock)
 			})
 
-			ts := httptest.NewServer(r)
-			defer ts.Close()
-
-			req, err := http.NewRequest(http.MethodGet, tt.url, nil)
-			require.NoError(t, err)
-
-			resp, err := http.DefaultClient.Do(req)
-			require.NoError(t, err)
+			// запускаем сервер
+			r.ServeHTTP(w, request)
+			resp := w.Result()
 
 			// проверяем код ответа
 			if resp.StatusCode != tt.want.code {
@@ -114,29 +112,6 @@ func TestFetchUrlHandler(t *testing.T) {
 			if resp.Header.Get("Location") != tt.want.location {
 				t.Errorf("Expected Location %s, got %s", tt.want.location, resp.Header.Get("Location"))
 			}
-
-			//request := httptest.NewRequest(http.MethodGet, tt.url, nil)
-			//
-			//// создаём новый Recorder
-			//w := httptest.NewRecorder()
-			//// определяем хендлер
-			//h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			//	FetchUrlHandler(w, r, storageMock)
-			//})
-			//
-			//// запускаем сервер
-			//h.ServeHTTP(w, request)
-			//res := w.Result()
-			//
-			//// проверяем код ответа
-			//if res.StatusCode != tt.want.code {
-			//	t.Errorf("Expected status code %d, got %d", tt.want.code, w.Code)
-			//}
-			//
-			//// заголовок ответа
-			//if res.Header.Get("Location") != tt.want.location {
-			//	t.Errorf("Expected Location %s, got %s", tt.want.location, res.Header.Get("Location"))
-			//}
 		})
 	}
 }
