@@ -22,30 +22,18 @@ func (s *ShortenerServer) Start(addr string, storage storage.UrlStorage, generat
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Post("/", s.handle)
-	r.Get("/", s.handle)
+
+	r.Post("/", func(res http.ResponseWriter, req *http.Request) {
+		handlers.MakeShortHandler(res, req, s.generator, s.storage)
+	})
+
+	r.Get("/{hash}", func(res http.ResponseWriter, req *http.Request) {
+		handlers.FetchUrlHandler(res, req, s.storage)
+	})
+
 	err := http.ListenAndServe(addr, r)
 	if err != nil {
 		fmt.Println("Can not start server ")
 		fmt.Println(err)
-	}
-}
-
-// Обработчик запросов
-func (s *ShortenerServer) handle(res http.ResponseWriter, req *http.Request) {
-	switch req.Method {
-
-	case http.MethodPost:
-		handlers.MakeShortHandler(res, req, s.generator, s.storage)
-
-	case http.MethodGet:
-		handlers.FetchUrlHandler(res, req, s.storage)
-
-	default:
-		res.WriteHeader(http.StatusBadRequest)
-		_, err := fmt.Fprintf(res, "Request must be POST or GET!")
-		if err != nil {
-			fmt.Printf("Error: %s\n", err)
-		}
 	}
 }

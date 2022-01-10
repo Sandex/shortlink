@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Sandex/shortlink/internal/generator"
 	"github.com/Sandex/shortlink/internal/storage"
+	"github.com/go-chi/chi/v5"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -12,7 +13,7 @@ import (
 // FetchUrlHandler Метод сервера, возвращает Location в заголовке ответа для найденного хэша
 func FetchUrlHandler(res http.ResponseWriter, req *http.Request, storage storage.UrlStorage) {
 	// get url hash
-	urlHash := strings.TrimPrefix(req.URL.Path, "/")
+	urlHash := strings.TrimPrefix(chi.URLParam(req, "hash"), "/")
 	fmt.Printf("Got hash: %s\n", urlHash)
 
 	// fetch url
