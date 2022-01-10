@@ -20,6 +20,16 @@ func (s *ShortenerServer) Start(addr string, storage storage.UrlStorage, generat
 	s.storage = storage
 	s.generator = generator
 
+	r := s.NewRouter()
+
+	err := http.ListenAndServe(addr, r)
+	if err != nil {
+		fmt.Println("Can not start server ")
+		fmt.Println(err)
+	}
+}
+
+func (s *ShortenerServer) NewRouter() *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
@@ -31,9 +41,5 @@ func (s *ShortenerServer) Start(addr string, storage storage.UrlStorage, generat
 		handlers.FetchUrlHandler(res, req, s.storage)
 	})
 
-	err := http.ListenAndServe(addr, r)
-	if err != nil {
-		fmt.Println("Can not start server ")
-		fmt.Println(err)
-	}
+	return r
 }
