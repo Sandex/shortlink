@@ -5,6 +5,8 @@ import (
 	"github.com/Sandex/shortlink/internal/generator"
 	"github.com/Sandex/shortlink/internal/handlers"
 	"github.com/Sandex/shortlink/internal/storage"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"net/http"
 )
 
@@ -13,20 +15,15 @@ type ShortenerServer struct {
 	generator generator.HasGenrator
 }
 
-// Запустить сервер
+// Start Запустить сервер
 func (s *ShortenerServer) Start(addr string, storage storage.UrlStorage, generator generator.HasGenrator) {
 	s.storage = storage
 	s.generator = generator
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", s.handle)
-
-	server := http.Server{
-		Addr:    addr,
-		Handler: mux,
-	}
-
-	err := server.ListenAndServe()
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+	r.Get("/", s.handle)
+	err := http.ListenAndServe(addr, r)
 	if err != nil {
 		fmt.Println("Can not start server ")
 		fmt.Println(err)

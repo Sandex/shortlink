@@ -15,7 +15,7 @@ func main() {
 	urlStorage.Init()
 
 	// Make hash generator
-	hashGenerator := new(generator.SimpleHasGenerator)
+	hashGenerator := new(generator.NanoIdHasGenerator)
 
 	// Make server
 	srv := new(server.ShortenerServer)
