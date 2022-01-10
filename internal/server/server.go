@@ -2,18 +2,21 @@ package server
 
 import (
 	"fmt"
+	"github.com/Sandex/shortlink/internal/generator"
 	"github.com/Sandex/shortlink/internal/handlers"
 	"github.com/Sandex/shortlink/internal/storage"
 	"net/http"
 )
 
 type ShortenerServer struct {
-	storage storage.UrlStorage
+	storage   storage.UrlStorage
+	generator generator.HasGenrator
 }
 
 // Запустить сервер
-func (s *ShortenerServer) Start(addr string, storage storage.UrlStorage) {
+func (s *ShortenerServer) Start(addr string, storage storage.UrlStorage, generator generator.HasGenrator) {
 	s.storage = storage
+	s.generator = generator
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.handle)
@@ -35,7 +38,7 @@ func (s *ShortenerServer) handle(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 
 	case http.MethodPost:
-		handlers.MakeShortHandler(res, req, s.storage)
+		handlers.MakeShortHandler(res, req, s.generator, s.storage)
 
 	case http.MethodGet:
 		handlers.FetchUrlHandler(res, req, s.storage)

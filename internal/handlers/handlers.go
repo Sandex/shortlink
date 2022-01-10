@@ -2,14 +2,14 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/Sandex/shortlink/internal/app"
+	"github.com/Sandex/shortlink/internal/generator"
 	"github.com/Sandex/shortlink/internal/storage"
 	"io/ioutil"
 	"net/http"
 	"strings"
 )
 
-// Метод сервера, возвращает Location в заголовке ответа для найденного хэша
+// FetchUrlHandler Метод сервера, возвращает Location в заголовке ответа для найденного хэша
 func FetchUrlHandler(res http.ResponseWriter, req *http.Request, storage storage.UrlStorage) {
 	// get url hash
 	urlHash := strings.TrimPrefix(req.URL.Path, "/")
@@ -35,8 +35,8 @@ func FetchUrlHandler(res http.ResponseWriter, req *http.Request, storage storage
 	}
 }
 
-// Метод сервера, создает хэш для ссылки и сохраняет эту связку
-func MakeShortHandler(res http.ResponseWriter, req *http.Request, storage storage.UrlStorage) {
+// MakeShortHandler Метод сервера, создает хэш для ссылки и сохраняет эту связку
+func MakeShortHandler(res http.ResponseWriter, req *http.Request, generator generator.HasGenrator, storage storage.UrlStorage) {
 	url, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		panic(err)
@@ -44,17 +44,23 @@ func MakeShortHandler(res http.ResponseWriter, req *http.Request, storage storag
 
 	// sanitize URL
 	urlStr := strings.Trim(string(url), "\n\r\t ")
-	fmt.Printf("Got url: %s\n", urlStr)
 
-	// do short and store
-	shortUrl := app.MakeUrlId()
-	fmt.Printf("Generate HASH %s for URL: %s\n", shortUrl, urlStr)
-	storage.Bind(urlStr, shortUrl)
+	if urlStr != "" {
+		fmt.Printf("Got url: %s\n", urlStr)
 
-	// output
-	res.WriteHeader(http.StatusCreated)
-	_, err = fmt.Fprintf(res, "http://"+req.Host+"/"+shortUrl)
-	if err != nil {
-		fmt.Printf("Error: %s\n", err)
+		// do short and store
+		hash := generator.MakeUrlId(urlStr)
+		fmt.Printf("Generate HASH %s for URL: %s\n", hash, urlStr)
+		storage.Bind(urlStr, hash)
+
+		// output
+		res.WriteHeader(http.StatusCreated)
+		_, err = fmt.Fprintf(res, "http://"+req.Host+"/"+hash)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err)
+		}
+	} else {
+		fmt.Printf("Got empty url\n")
+		res.WriteHeader(http.StatusNotAcceptable)
 	}
 }
