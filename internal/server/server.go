@@ -22,6 +22,7 @@ func (s *ShortenerServer) Start(addr string, storage storage.UrlStorage, generat
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Post("/", s.handle)
 	r.Get("/", s.handle)
 	err := http.ListenAndServe(addr, r)
 	if err != nil {
