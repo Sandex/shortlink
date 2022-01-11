@@ -16,12 +16,12 @@ import (
 )
 
 type ShortenerServer struct {
-	storage   storage.UrlStorage
+	storage   storage.URLStorage
 	generator generator.HasGenrator
 }
 
 // Start Запустить сервер
-func (s *ShortenerServer) Start(addr string, storage storage.UrlStorage, generator generator.HasGenrator) {
+func (s *ShortenerServer) Start(addr string, storage storage.URLStorage, generator generator.HasGenrator) {
 	s.storage = storage
 	s.generator = generator
 
@@ -66,7 +66,7 @@ func (s *ShortenerServer) NewRouter() *chi.Mux {
 	})
 
 	r.Get("/{hash:[a-zA-Z0-9-]+}", func(res http.ResponseWriter, req *http.Request) {
-		handlers.FetchUrlHandler(res, req, s.storage)
+		handlers.FetchURLHandler(res, req, s.storage)
 	})
 
 	return r

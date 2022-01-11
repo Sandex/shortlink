@@ -1,7 +1,7 @@
 package storage
 
-// UrlStorage Интерфейс для хранения ссылок
-type UrlStorage interface {
+// URLStorage Интерфейс для хранения ссылок
+type URLStorage interface {
 	// Bind Привязать ссылку к хэшу
 	Bind(url string, hash string)
 

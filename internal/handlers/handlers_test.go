@@ -27,7 +27,7 @@ func (s *StorageMock) Fetch(hash string) string {
 // Создаем mock
 type GeneratorMock struct{}
 
-func (h *GeneratorMock) MakeUrlId(url string) string {
+func (h *GeneratorMock) MakeURLID(url string) string {
 	switch url {
 	case "https://ya.ru":
 		return "YA"
@@ -38,7 +38,7 @@ func (h *GeneratorMock) MakeUrlId(url string) string {
 	}
 }
 
-func TestFetchUrlHandler(t *testing.T) {
+func TestFetchURLHandler(t *testing.T) {
 	storageMock := new(StorageMock)
 
 	// определяем структуру теста
@@ -96,12 +96,13 @@ func TestFetchUrlHandler(t *testing.T) {
 
 			r := chi.NewRouter()
 			r.Get("/{hash:[a-zA-Z0-9-]+}", func(res http.ResponseWriter, req *http.Request) {
-				FetchUrlHandler(res, req, storageMock)
+				FetchURLHandler(res, req, storageMock)
 			})
 
 			// запускаем сервер
 			r.ServeHTTP(w, request)
 			resp := w.Result()
+			defer resp.Body.Close()
 
 			// проверяем код ответа
 			if resp.StatusCode != tt.want.code {

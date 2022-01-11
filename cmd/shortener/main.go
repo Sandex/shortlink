@@ -11,13 +11,13 @@ func main() {
 	log.Println("Start server")
 
 	// Make storage
-	urlStorage := new(storage.MemoryStorage)
-	urlStorage.Init()
+	URLStorage := new(storage.MemoryStorage)
+	URLStorage.Init()
 
 	// Make hash generator
-	hashGenerator := new(generator.NanoIdHasGenerator)
+	hashGenerator := new(generator.NanoIDHasGenerator)
 
 	// Make server
 	srv := new(server.ShortenerServer)
-	srv.Start("127.0.0.1:8080", urlStorage, hashGenerator)
+	srv.Start("127.0.0.1:8080", URLStorage, hashGenerator)
 }

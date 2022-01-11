@@ -11,8 +11,8 @@ import (
 	"net/url"
 )
 
-// FetchUrlHandler Метод сервера, возвращает Location в заголовке ответа для найденного хэша
-func FetchUrlHandler(res http.ResponseWriter, req *http.Request, storage storage.UrlStorage) {
+// FetchURLHandler Метод сервера, возвращает Location в заголовке ответа для найденного хэша
+func FetchURLHandler(res http.ResponseWriter, req *http.Request, storage storage.URLStorage) {
 	// get url hash
 	urlHash := chi.URLParam(req, "hash")
 	log.Printf("Got hash: %s\n", urlHash)
@@ -38,14 +38,14 @@ func FetchUrlHandler(res http.ResponseWriter, req *http.Request, storage storage
 }
 
 // MakeShortHandler Метод сервера, создает хэш для ссылки и сохраняет эту связку
-func MakeShortHandler(res http.ResponseWriter, req *http.Request, generator generator.HasGenrator, storage storage.UrlStorage) {
-	inputRawUrl, err := ioutil.ReadAll(req.Body)
+func MakeShortHandler(res http.ResponseWriter, req *http.Request, generator generator.HasGenrator, storage storage.URLStorage) {
+	inputRawURL, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		panic(err)
 	}
 
 	// validate URL
-	urlStr := validateUrl(err, string(inputRawUrl))
+	urlStr := validateURL(string(inputRawURL))
 
 	if urlStr == "" {
 		log.Printf("Invalide URL\n")
@@ -54,7 +54,7 @@ func MakeShortHandler(res http.ResponseWriter, req *http.Request, generator gene
 		log.Printf("Got URL: %s\n", urlStr)
 
 		// do short and store
-		hash := generator.MakeUrlId(urlStr)
+		hash := generator.MakeURLID(urlStr)
 		log.Printf("Generate HASH %s for URL: %s\n", hash, urlStr)
 		storage.Bind(urlStr, hash)
 
@@ -69,19 +69,19 @@ func MakeShortHandler(res http.ResponseWriter, req *http.Request, generator gene
 		}
 
 		// send to client
-		_, err = fmt.Fprintf(res, newLink.String())
+		_, err := res.Write([]byte(newLink.String()))
 		if err != nil {
-			log.Printf("Error: %s\n", err)
+			log.Printf("Can not write http body\n")
 		}
 	}
 
 }
 
-func validateUrl(err error, inputRawUrl string) string {
+func validateURL(inputRawURL string) string {
 	urlStr := ""
-	inputUrl, err := url.Parse(inputRawUrl)
+	inputURL, err := url.Parse(inputRawURL)
 	if err == nil {
-		urlStr = inputUrl.String()
+		urlStr = inputURL.String()
 	}
 
 	return urlStr
