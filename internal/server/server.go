@@ -65,7 +65,7 @@ func (s *ShortenerServer) NewRouter() *chi.Mux {
 		handlers.MakeShortHandler(res, req, s.generator, s.storage)
 	})
 
-	r.Get("/{hash:[a-zA-Z0-9-]+}", func(res http.ResponseWriter, req *http.Request) {
+	r.Get("/{hash:[A-Za-z0-9_-]+}", func(res http.ResponseWriter, req *http.Request) {
 		handlers.FetchURLHandler(res, req, s.storage)
 	})
 

@@ -73,7 +73,7 @@ func TestFetchURLHandler(t *testing.T) {
 			name: "negative test #3",
 			url:  "http://localhost:8080/NO_EXISTS_HASH",
 			want: want{
-				code:     404,
+				code:     400,
 				location: "",
 			},
 		},
@@ -95,7 +95,7 @@ func TestFetchURLHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			r := chi.NewRouter()
-			r.Get("/{hash:[a-zA-Z0-9-]+}", func(res http.ResponseWriter, req *http.Request) {
+			r.Get("/{hash:[A-Za-z0-9_-]+}", func(res http.ResponseWriter, req *http.Request) {
 				FetchURLHandler(res, req, storageMock)
 			})
 
