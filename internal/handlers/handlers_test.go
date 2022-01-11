@@ -73,7 +73,7 @@ func TestFetchUrlHandler(t *testing.T) {
 			name: "negative test #3",
 			url:  "http://localhost:8080/NO_EXISTS_HASH",
 			want: want{
-				code:     400,
+				code:     404,
 				location: "",
 			},
 		},
@@ -152,7 +152,7 @@ func TestMakeShortHandler(t *testing.T) {
 			name: "negative test #13",
 			url:  "",
 			want: want{
-				code:     406,
+				code:     400,
 				response: "",
 			},
 		},
