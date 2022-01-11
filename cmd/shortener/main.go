@@ -1,14 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"github.com/Sandex/shortlink/internal/generator"
 	"github.com/Sandex/shortlink/internal/server"
 	"github.com/Sandex/shortlink/internal/storage"
+	"log"
 )
 
 func main() {
-	fmt.Println("Start server")
+	log.Println("Start server")
 
 	// Make storage
 	urlStorage := new(storage.MemoryStorage)

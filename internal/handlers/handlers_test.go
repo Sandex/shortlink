@@ -95,7 +95,7 @@ func TestFetchUrlHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			r := chi.NewRouter()
-			r.Get("/{hash}", func(res http.ResponseWriter, req *http.Request) {
+			r.Get("/{hash:[a-zA-Z0-9-]+}", func(res http.ResponseWriter, req *http.Request) {
 				FetchUrlHandler(res, req, storageMock)
 			})
 

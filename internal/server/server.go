@@ -1,13 +1,18 @@
 package server
 
 import (
-	"fmt"
+	"context"
 	"github.com/Sandex/shortlink/internal/generator"
 	"github.com/Sandex/shortlink/internal/handlers"
 	"github.com/Sandex/shortlink/internal/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 type ShortenerServer struct {
@@ -22,11 +27,34 @@ func (s *ShortenerServer) Start(addr string, storage storage.UrlStorage, generat
 
 	r := s.NewRouter()
 
-	err := http.ListenAndServe(addr, r)
-	if err != nil {
-		fmt.Println("Can not start server ")
-		fmt.Println(err)
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: r,
 	}
+
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+	log.Print("Server Started")
+
+	<-done
+	log.Print("Server Stopped")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer func() {
+		// extra handling here
+		cancel()
+	}()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatalf("Server Shutdown Failed:%+v", err)
+	}
+	log.Print("Server Exited Properly")
 }
 
 func (s *ShortenerServer) NewRouter() *chi.Mux {
@@ -37,7 +65,7 @@ func (s *ShortenerServer) NewRouter() *chi.Mux {
 		handlers.MakeShortHandler(res, req, s.generator, s.storage)
 	})
 
-	r.Get("/{hash}", func(res http.ResponseWriter, req *http.Request) {
+	r.Get("/{hash:[a-zA-Z0-9-]+}", func(res http.ResponseWriter, req *http.Request) {
 		handlers.FetchUrlHandler(res, req, s.storage)
 	})
 
