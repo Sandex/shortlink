@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"github.com/Sandex/shortlink/internal/config"
 	"github.com/Sandex/shortlink/internal/generator"
 	"github.com/Sandex/shortlink/internal/server"
@@ -16,6 +17,22 @@ func main() {
 	err := env.Parse(&cfg)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	serverAddress := flag.String("a", "", "Server address and port, ex.: localhost:8080")
+	baseURL := flag.String("b", "", "Base URL")
+	fileStoragePath := flag.String("f", "", "File storage path")
+	flag.Parse()
+
+	if *serverAddress != "" {
+		cfg.ServerAddress = *serverAddress
+	}
+
+	if *baseURL != "" {
+		cfg.ServerAddress = *baseURL
+	}
+	if *fileStoragePath != "" {
+		cfg.ServerAddress = *fileStoragePath
 	}
 
 	log.Printf("Use SERVER_ADDRESS %s", cfg.ServerAddress)
