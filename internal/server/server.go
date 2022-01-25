@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/Sandex/shortlink/internal/config"
 	"github.com/Sandex/shortlink/internal/generator"
 	"github.com/Sandex/shortlink/internal/handlers"
 	"github.com/Sandex/shortlink/internal/storage"
@@ -18,14 +19,18 @@ import (
 type ShortenerServer struct {
 	storage   storage.URLStorage
 	generator generator.HasGenrator
+	cfg       config.Config
 }
 
 // Start Запустить сервер
-func (s *ShortenerServer) Start(addr string, storage storage.URLStorage, generator generator.HasGenrator) {
+func (s *ShortenerServer) Start(cfg config.Config, storage storage.URLStorage, generator generator.HasGenrator) {
 	s.storage = storage
 	s.generator = generator
+	s.cfg = cfg
 
 	r := s.NewRouter()
+
+	addr := cfg.ServerAddress
 
 	srv := &http.Server{
 		Addr:    addr,
@@ -69,7 +74,7 @@ func (s *ShortenerServer) NewRouter() *chi.Mux {
 		handlers.FetchURLHandler(res, req, s.storage)
 	})
 
-	r.Post("/api/shorten", func(res http.ResponseWriter, req *http.Request) {
+	r.Post(s.cfg.BaseURL, func(res http.ResponseWriter, req *http.Request) {
 		handlers.APIShortenHandler(res, req, s.generator, s.storage)
 	})
 
