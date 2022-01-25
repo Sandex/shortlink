@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/Sandex/shortlink/internal/generator"
 	"github.com/Sandex/shortlink/internal/storage"
@@ -59,6 +60,12 @@ func MakeShortHandler(res http.ResponseWriter, req *http.Request, generator gene
 	urlStr := inputURL.String()
 	log.Printf("Got URL: %s\n", urlStr)
 
+	if urlStr == "" {
+		log.Printf("Invalide URL\n")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	// do short and store
 	hash := generator.MakeURLID(urlStr)
 	log.Printf("Generate HASH %s for URL: %s\n", hash, urlStr)
@@ -76,6 +83,72 @@ func MakeShortHandler(res http.ResponseWriter, req *http.Request, generator gene
 
 	// send to client
 	_, err = res.Write([]byte(newLink.String()))
+	if err != nil {
+		log.Printf("Can not write http body\n")
+	}
+}
+
+type ShortenRequest struct {
+	URL string `json:"url,omitempty"`
+}
+
+type ShortenResponse struct {
+	Result string `json:"result,omitempty"`
+}
+
+func APIShortenHandler(res http.ResponseWriter, req *http.Request, generator generator.HasGenrator, storage storage.URLStorage) {
+	// get body
+	jsonBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		log.Printf("Can not read body data\n")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	log.Printf("Got json body URL: %s\n", jsonBody)
+
+	// try convert json to object
+	shortenRequest := ShortenRequest{}
+	if err := json.Unmarshal(jsonBody, &shortenRequest); err != nil {
+		log.Printf("Invalide URL request\n")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	urlStr := shortenRequest.URL
+	log.Printf("Got URL: %s\n", shortenRequest.URL)
+
+	if urlStr == "" {
+		log.Printf("Invalide URL\n")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// do short and store
+	hash := generator.MakeURLID(urlStr)
+	log.Printf("Generate HASH %s for URL: %s\n", hash, urlStr)
+	storage.Bind(urlStr, hash)
+
+	// build new link
+	newLink := url.URL{
+		Scheme: "http",
+		Host:   req.Host,
+		Path:   hash,
+	}
+
+	// convert url to json
+	shortenResponse := ShortenResponse{Result: newLink.String()}
+	jsonResult, err := json.Marshal(shortenResponse)
+	if err != nil {
+		log.Printf("Can not convert to json\n")
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// output
+	res.WriteHeader(http.StatusCreated)
+
+	// send to client
+	_, err = res.Write(jsonResult)
 	if err != nil {
 		log.Printf("Can not write http body\n")
 	}

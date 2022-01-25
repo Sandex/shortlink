@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
@@ -168,6 +169,76 @@ func TestMakeShortHandler(t *testing.T) {
 			// определяем хендлер
 			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				MakeShortHandler(w, r, generatorMock, storageMock)
+			})
+
+			// запускаем сервер
+			h.ServeHTTP(w, request)
+			res := w.Result()
+
+			// проверяем код ответа
+			if res.StatusCode != tt.want.code {
+				t.Errorf("Expected status code %d, got %d", tt.want.code, w.Code)
+			}
+
+			// получаем и проверяем тело запроса
+			defer res.Body.Close()
+			resBody, err := io.ReadAll(res.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(resBody) != tt.want.response {
+				t.Errorf("Expected body %s, got %s", tt.want.response, w.Body.String())
+			}
+		})
+	}
+}
+
+func TestShortenHandler(t *testing.T) {
+	storageMock := new(StorageMock)
+	generatorMock := new(GeneratorMock)
+
+	// определяем структуру теста
+	type want struct {
+		code     int
+		response string
+	}
+	// создаём массив тестов: имя и желаемый результат
+	tests := []struct {
+		name string
+		body string
+		want want
+	}{
+		// определяем все тесты
+		{
+			name: "positive test #21",
+			body: `{"url": "https://ya.ru"}`,
+			want: want{
+				code:     201,
+				response: `{"result":"http://localhost:8080/YA"}`,
+			},
+		},
+		{
+			name: "negative test #22",
+			body: `{"url": ""}`,
+			want: want{
+				code:     400,
+				response: ``,
+			},
+		},
+	}
+	for _, tt := range tests {
+		// запускаем каждый тест
+		t.Run(tt.name, func(t *testing.T) {
+
+			fmt.Println(bytes.NewBufferString(tt.body))
+
+			request := httptest.NewRequest(http.MethodPost, "http://localhost:8080/api/shorten", bytes.NewBufferString(tt.body))
+
+			// создаём новый Recorder
+			w := httptest.NewRecorder()
+			// определяем хендлер
+			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				APIShortenHandler(w, r, generatorMock, storageMock)
 			})
 
 			// запускаем сервер

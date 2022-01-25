@@ -69,5 +69,9 @@ func (s *ShortenerServer) NewRouter() *chi.Mux {
 		handlers.FetchURLHandler(res, req, s.storage)
 	})
 
+	r.Post("/api/shorten", func(res http.ResponseWriter, req *http.Request) {
+		handlers.APIShortenHandler(res, req, s.generator, s.storage)
+	})
+
 	return r
 }
