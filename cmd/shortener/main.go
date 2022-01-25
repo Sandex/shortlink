@@ -20,10 +20,11 @@ func main() {
 
 	log.Printf("Use SERVER_ADDRESS %s", cfg.ServerAddress)
 	log.Printf("Use BASE_URL %s", cfg.BaseURL)
+	log.Printf("Use FILE_STORAGE_PATH %s", cfg.FileStoragePath)
 
 	// Make storage
-	URLStorage := new(storage.MemoryStorage)
-	URLStorage.Init()
+	URLStorage := new(storage.FileStorage)
+	URLStorage.Init(cfg.FileStoragePath)
 
 	// Make hash generator
 	hashGenerator := new(generator.NanoIDHasGenerator)
