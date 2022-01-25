@@ -28,61 +28,55 @@ func FetchURLHandler(res http.ResponseWriter, req *http.Request, storage storage
 		if err != nil {
 			log.Printf("Error: %s\n", err)
 		}
-	} else {
-		// send location
-		log.Printf("URL: %s\n", urlOriginal)
 
-		res.Header().Add("Location", urlOriginal)
-		res.WriteHeader(http.StatusTemporaryRedirect)
+		return
 	}
+
+	// send location
+	log.Printf("URL: %s\n", urlOriginal)
+
+	res.Header().Add("Location", urlOriginal)
+	res.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 // MakeShortHandler Метод сервера, создает хэш для ссылки и сохраняет эту связку
 func MakeShortHandler(res http.ResponseWriter, req *http.Request, generator generator.HasGenrator, storage storage.URLStorage) {
 	inputRawURL, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		panic(err)
+		log.Printf("Can not read body data\n")
+		res.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	// validate URL
-	urlStr := validateURL(string(inputRawURL))
-
-	if urlStr == "" {
+	inputURL, err := url.Parse(string(inputRawURL))
+	if err != nil {
 		log.Printf("Invalide URL\n")
 		res.WriteHeader(http.StatusBadRequest)
-	} else {
-		log.Printf("Got URL: %s\n", urlStr)
-
-		// do short and store
-		hash := generator.MakeURLID(urlStr)
-		log.Printf("Generate HASH %s for URL: %s\n", hash, urlStr)
-		storage.Bind(urlStr, hash)
-
-		// output
-		res.WriteHeader(http.StatusCreated)
-
-		// build new link
-		newLink := url.URL{
-			Scheme: "http",
-			Host:   req.Host,
-			Path:   hash,
-		}
-
-		// send to client
-		_, err := res.Write([]byte(newLink.String()))
-		if err != nil {
-			log.Printf("Can not write http body\n")
-		}
+		return
 	}
 
-}
+	urlStr := inputURL.String()
+	log.Printf("Got URL: %s\n", urlStr)
 
-func validateURL(inputRawURL string) string {
-	urlStr := ""
-	inputURL, err := url.Parse(inputRawURL)
-	if err == nil {
-		urlStr = inputURL.String()
+	// do short and store
+	hash := generator.MakeURLID(urlStr)
+	log.Printf("Generate HASH %s for URL: %s\n", hash, urlStr)
+	storage.Bind(urlStr, hash)
+
+	// output
+	res.WriteHeader(http.StatusCreated)
+
+	// build new link
+	newLink := url.URL{
+		Scheme: "http",
+		Host:   req.Host,
+		Path:   hash,
 	}
 
-	return urlStr
+	// send to client
+	_, err = res.Write([]byte(newLink.String()))
+	if err != nil {
+		log.Printf("Can not write http body\n")
+	}
 }
