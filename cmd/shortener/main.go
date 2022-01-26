@@ -29,10 +29,10 @@ func main() {
 	}
 
 	if *baseURL != "" {
-		cfg.ServerAddress = *baseURL
+		cfg.BaseURL = *baseURL
 	}
 	if *fileStoragePath != "" {
-		cfg.ServerAddress = *fileStoragePath
+		cfg.FileStoragePath = *fileStoragePath
 	}
 
 	log.Printf("Use SERVER_ADDRESS %s", cfg.ServerAddress)
