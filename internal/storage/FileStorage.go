@@ -15,7 +15,7 @@ func (s *FileStorage) Init(filename string) {
 
 	s.producer = producer
 	if err != nil {
-		log.Fatal("Can not init filename %s", filename)
+		log.Printf("Can not init filename %s", filename)
 	}
 
 	// init store

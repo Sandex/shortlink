@@ -48,11 +48,11 @@ func (p *Producer) WriteEvent(event *Event) error {
 	return p.writer.Flush()
 }
 
-func (c *Producer) ReadEvent() (*Event, error) {
-	if !c.scanner.Scan() {
-		return nil, c.scanner.Err()
+func (p *Producer) ReadEvent() (*Event, error) {
+	if !p.scanner.Scan() {
+		return nil, p.scanner.Err()
 	}
-	data := c.scanner.Bytes()
+	data := p.scanner.Bytes()
 
 	log.Println(data)
 
