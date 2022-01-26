@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"fmt"
 	"log"
 )
 
@@ -16,7 +15,7 @@ func (s *FileStorage) Init(filename string) {
 
 	s.producer = producer
 	if err != nil {
-		log.Fatal(fmt.Sprint("Can not init filename %s", filename))
+		log.Fatal("Can not init filename %s", filename)
 	}
 
 	// init store

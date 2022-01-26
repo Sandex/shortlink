@@ -64,7 +64,3 @@ func (c *Producer) ReadEvent() (*Event, error) {
 
 	return &event, nil
 }
-
-func (p *Producer) Close() error {
-	return p.file.Close()
-}
