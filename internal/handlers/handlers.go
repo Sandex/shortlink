@@ -1,66 +1,156 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/Sandex/shortlink/internal/generator"
 	"github.com/Sandex/shortlink/internal/storage"
+	"github.com/go-chi/chi/v5"
 	"io/ioutil"
+	"log"
 	"net/http"
-	"strings"
+	"net/url"
 )
 
-// FetchUrlHandler Метод сервера, возвращает Location в заголовке ответа для найденного хэша
-func FetchUrlHandler(res http.ResponseWriter, req *http.Request, storage storage.UrlStorage) {
+// FetchURLHandler Метод сервера, возвращает Location в заголовке ответа для найденного хэша
+func FetchURLHandler(res http.ResponseWriter, req *http.Request, storage storage.URLStorage) {
 	// get url hash
-	urlHash := strings.TrimPrefix(req.URL.Path, "/")
-	fmt.Printf("Got hash: %s\n", urlHash)
+	urlHash := chi.URLParam(req, "hash")
+	log.Printf("Got hash: %s\n", urlHash)
 
 	// fetch url
 	urlOriginal := storage.Fetch(urlHash)
-	if urlOriginal != "" {
-		// send location
-		fmt.Printf("URL: %s\n", urlOriginal)
-
-		res.Header().Add("Location", urlOriginal)
-		res.WriteHeader(http.StatusTemporaryRedirect)
-	} else {
+	if urlOriginal == "" {
 		// not found
-		fmt.Printf("Can not find URL for hash: %s\n", urlHash)
+		log.Printf("Can not find URL for hash: %s\n", urlHash)
 
 		res.WriteHeader(http.StatusBadRequest)
 		_, err := fmt.Fprintf(res, "Can not find URL for this hash!")
 		if err != nil {
-			fmt.Printf("Error: %s\n", err)
+			log.Printf("Error: %s\n", err)
 		}
+
+		return
 	}
+
+	// send location
+	log.Printf("URL: %s\n", urlOriginal)
+
+	res.Header().Add("Location", urlOriginal)
+	res.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 // MakeShortHandler Метод сервера, создает хэш для ссылки и сохраняет эту связку
-func MakeShortHandler(res http.ResponseWriter, req *http.Request, generator generator.HasGenrator, storage storage.UrlStorage) {
-	url, err := ioutil.ReadAll(req.Body)
+func MakeShortHandler(res http.ResponseWriter, req *http.Request, generator generator.HasGenrator, storage storage.URLStorage) {
+	inputRawURL, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		panic(err)
+		log.Printf("Can not read body data\n")
+		res.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
-	// sanitize URL
-	urlStr := strings.Trim(string(url), "\n\r\t ")
+	// validate URL
+	inputURL, err := url.Parse(string(inputRawURL))
+	if err != nil {
+		log.Printf("Invalide URL\n")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
-	if urlStr != "" {
-		fmt.Printf("Got url: %s\n", urlStr)
+	urlStr := inputURL.String()
+	log.Printf("Got URL: %s\n", urlStr)
 
-		// do short and store
-		hash := generator.MakeUrlId(urlStr)
-		fmt.Printf("Generate HASH %s for URL: %s\n", hash, urlStr)
-		storage.Bind(urlStr, hash)
+	if urlStr == "" {
+		log.Printf("Invalide URL\n")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
-		// output
-		res.WriteHeader(http.StatusCreated)
-		_, err = fmt.Fprintf(res, "http://"+req.Host+"/"+hash)
-		if err != nil {
-			fmt.Printf("Error: %s\n", err)
-		}
-	} else {
-		fmt.Printf("Got empty url\n")
-		res.WriteHeader(http.StatusNotAcceptable)
+	// do short and store
+	hash := generator.MakeURLID(urlStr)
+	log.Printf("Generate HASH %s for URL: %s\n", hash, urlStr)
+	storage.Bind(urlStr, hash)
+
+	// output
+	res.WriteHeader(http.StatusCreated)
+
+	// build new link
+	newLink := url.URL{
+		Scheme: "http",
+		Host:   req.Host,
+		Path:   hash,
+	}
+
+	// send to client
+	_, err = res.Write([]byte(newLink.String()))
+	if err != nil {
+		log.Printf("Can not write http body\n")
+	}
+}
+
+type ShortenRequest struct {
+	URL string `json:"url,omitempty"`
+}
+
+type ShortenResponse struct {
+	Result string `json:"result,omitempty"`
+}
+
+func APIShortenHandler(res http.ResponseWriter, req *http.Request, generator generator.HasGenrator, storage storage.URLStorage) {
+	// get body
+	jsonBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		log.Printf("Can not read body data\n")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	log.Printf("Got json body URL: %s\n", jsonBody)
+
+	// try convert json to object
+	shortenRequest := ShortenRequest{}
+	if err := json.Unmarshal(jsonBody, &shortenRequest); err != nil {
+		log.Printf("Invalide URL request\n")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	urlStr := shortenRequest.URL
+	log.Printf("Got URL: %s\n", shortenRequest.URL)
+
+	if urlStr == "" {
+		log.Printf("Invalide URL\n")
+		res.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// do short and store
+	hash := generator.MakeURLID(urlStr)
+	log.Printf("Generate HASH %s for URL: %s\n", hash, urlStr)
+	storage.Bind(urlStr, hash)
+
+	// build new link
+	newLink := url.URL{
+		Scheme: "http",
+		Host:   req.Host,
+		Path:   hash,
+	}
+
+	// convert url to json
+	shortenResponse := ShortenResponse{Result: newLink.String()}
+	jsonResult, err := json.Marshal(shortenResponse)
+	if err != nil {
+		log.Printf("Can not convert to json\n")
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// output
+	res.Header().Add("Content-Type", "application/json")
+	res.WriteHeader(http.StatusCreated)
+
+	// send to client
+	_, err = res.Write(jsonResult)
+	if err != nil {
+		log.Printf("Can not write http body\n")
 	}
 }

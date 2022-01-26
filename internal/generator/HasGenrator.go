@@ -1,5 +1,5 @@
 package generator
 
 type HasGenrator interface {
-	MakeUrlId(urlStr string) string
+	MakeURLID(urlStr string) string
 }

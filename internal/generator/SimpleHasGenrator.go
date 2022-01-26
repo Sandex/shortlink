@@ -8,7 +8,7 @@ import (
 
 type SimpleHasGenerator struct{}
 
-func (h *SimpleHasGenerator) MakeUrlId(url string) string {
+func (h *SimpleHasGenerator) MakeURLID(url string) string {
 	rand.Seed(time.Now().UnixNano())
 
 	randomBytes := make([]byte, 8)
