@@ -146,6 +146,7 @@ func APIShortenHandler(res http.ResponseWriter, req *http.Request, generator gen
 
 	// output
 	res.WriteHeader(http.StatusCreated)
+	res.Header().Add("Content-Type", "application/json")
 
 	// send to client
 	_, err = res.Write(jsonResult)
